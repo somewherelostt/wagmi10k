@@ -69,6 +69,10 @@ async fn wagmi_handler(
     }
 }
 
+async fn health_check() -> impl Responder {
+    HttpResponse::Ok().body("OK")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
@@ -83,6 +87,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .route("/wagmi", web::post().to(wagmi_handler))
+            .route("/health", web::get().to(health_check))
     })
     .workers(num_cpus::get() * 2) // Optimize for concurrent requests
     .keep_alive(std::time::Duration::from_secs(30)) // Keep connections alive
