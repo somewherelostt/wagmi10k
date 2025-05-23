@@ -75,6 +75,11 @@ async fn main() -> std::io::Result<()> {
     
     println!("Starting WAGMI-9000 server...");
     
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let port = port.parse::<u16>().expect("PORT must be a number");
+    
+    println!("Server will run on port: {}", port);
+    
     HttpServer::new(|| {
         App::new()
             .route("/wagmi", web::post().to(wagmi_handler))
@@ -82,7 +87,7 @@ async fn main() -> std::io::Result<()> {
     .workers(num_cpus::get() * 2) // Optimize for concurrent requests
     .keep_alive(std::time::Duration::from_secs(30)) // Keep connections alive
     .client_request_timeout(std::time::Duration::from_secs(5)) // Set request timeout
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
