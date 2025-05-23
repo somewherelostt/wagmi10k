@@ -20,6 +20,9 @@ RUN apt-get update && \
 
 COPY --from=builder /usr/src/app/target/release/wagmi-9000 /usr/local/bin/wagmi-9000
 
-EXPOSE 8080
+# The port that your application listens to
+ENV PORT=8080
+EXPOSE ${PORT}
 
+# Run the binary
 CMD ["wagmi-9000"] 
