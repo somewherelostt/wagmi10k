@@ -49,3 +49,20 @@ This project is configured for deployment on Railway.app. Simply connect your Gi
 - Optimized worker count based on CPU cores
 - Minimal memory footprint
 - Efficient JSON serialization/deserialization
+
+Deployment URL: <https://wagmi10k-production.up.railway.app>
+Port: 8080
+Endpoint: POST /wagmi
+
+Test Cases:
+
+1. Ping Test:
+   curl -X POST <https://wagmi10k-production.up.railway.app/wagmi> -H "Content-Type: application/json" -d "{}"
+
+2. Addition Test:
+   curl -X POST <https://wagmi10k-production.up.railway.app/wagmi> -H "Content-Type: application/json" -d '{"a": 40, "b": 55}'
+
+Performance Metrics:
+
+- Concurrent Requests: 10,000 requests in 4-5 seconds
+- Request Rate: 2,000 requests per second

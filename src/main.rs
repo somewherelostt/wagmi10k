@@ -80,6 +80,8 @@ async fn main() -> std::io::Result<()> {
             .route("/wagmi", web::post().to(wagmi_handler))
     })
     .workers(num_cpus::get() * 2) // Optimize for concurrent requests
+    .keep_alive(std::time::Duration::from_secs(30)) // Keep connections alive
+    .client_request_timeout(std::time::Duration::from_secs(5)) // Set request timeout
     .bind(("0.0.0.0", 8080))?
     .run()
     .await
