@@ -1,68 +1,178 @@
-# WAGMI-9000
+# 🚀 WAGMI-9000: High-Performance Echo Unit
 
-A high-performance Rust server for the WAGMI-9000 challenge.
+Welcome to the WAGMI-9000 project! This is a Rust-based server designed to meet the requirements of the WAGMI-9000 challenge, focusing on speed and reliability for handling a single endpoint with different request types.
 
-## Features
+## ✨ Features
 
-- Single POST /wagmi endpoint
-- Handles ping requests and addition operations
-- Optimized for high concurrency
-- Built with Actix-web for maximum performance
+- **Single Endpoint:** Implements the required `POST /wagmi` route.
+- **Request Handling:** Capable of handling both ping requests (empty body) and addition requests (`{"a": X, "b": Y}`).
+- **Input Validation:** Validates addition inputs to ensure `a` and `b` are non-negative numbers and their sum is `<= 100`.
+- **High Performance:** Built with Rust and the Actix-web framework for excellent concurrency handling and low latency.
 
-## Local Development
+## 🌐 Deployed Application
 
-1. Install Rust (if not already installed):
+The application is deployed on Railway.app and is publicly accessible. You can interact with it at the following base URL:
 
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
+**Deployed URL:** `https://wagmi10k-production.up.railway.app`
 
-2. Run the server:
+**Endpoint:** `POST /wagmi`
 
-   ```bash
-   cargo run --release
-   ```
+## 🧪 Testing the Deployed Application
 
-The server will start on `http://localhost:8080`
+You can test the deployed server using `curl` or any API testing tool like Postman.
 
-## Testing
+### 1. Ping Test
 
-### Ping Test
+Send an empty JSON body to the `/wagmi` endpoint:
 
 ```bash
-curl -X POST http://localhost:8080/wagmi -H "Content-Type: application/json" -d "{}"
+curl -X POST https://wagmi10k-production.up.railway.app/wagmi -H "Content-Type: application/json" -d "{}"
 ```
 
-### Addition Test
+Expected Output (timestamp will vary):
+
+```json
+{
+  "message": "wagmi",
+  "timestamp": "...",
+  "lang": "Rust"
+}
+```
+
+### 2. Addition Test
+
+Send a JSON body with `a` and `b` to the `/wagmi` endpoint:
 
 ```bash
-curl -X POST http://localhost:8080/wagmi -H "Content-Type: application/json" -d '{"a": 40, "b": 55}'
+curl -X POST https://wagmi10k-production.up.railway.app/wagmi -H "Content-Type: application/json" -d '{"a": 40, "b": 55}'
 ```
 
-## Deployment
+Expected Output:
 
-This project is configured for deployment on Railway.app. Simply connect your GitHub repository to Railway and it will automatically build and deploy using the provided Dockerfile.
+```json
+{
+  "result": 95,
+  "a": 40,
+  "b": 55,
+  "status": "success"
+}
+```
 
-## Performance Optimizations
+### 3. Invalid Input Test
 
-- Uses Actix-web for high-performance async I/O
-- Optimized worker count based on CPU cores
-- Minimal memory footprint
-- Efficient JSON serialization/deserialization
+Test with invalid inputs (e.g., sum > 100 or non-numeric values):
 
-Deployment URL: <https://wagmi10k-production.up.railway.app>
-Port: 8080
-Endpoint: POST /wagmi
+```bash
+curl -X POST https://wagmi10k-production.up.railway.app/wagmi -H "Content-Type: application/json" -d '{"a": 50, "b": 60}'
+```
 
-Test Cases:
+Expected Output:
 
-1. Ping Test:
-   curl -X POST <https://wagmi10k-production.up.railway.app/wagmi> -H "Content-Type: application/json" -d "{}"
+```json
+{
+  "error": "Invalid input"
+}
+```
 
-2. Addition Test:
-   curl -X POST <https://wagmi10k-production.up.railway.app/wagmi> -H "Content-Type: application/json" -d '{"a": 40, "b": 55}'
+### 4. Load Test (10,000 Concurrent Requests)
 
-Performance Metrics:
+To test the server's ability to handle high traffic, you can use the provided Node.js load testing script (`load_test.js`).
 
-- Concurrent Requests: 10,000 requests in 4-5 seconds
-- Request Rate: 2,000 requests per second
+**Prerequisites:**
+
+- Node.js and npm installed.
+
+**Steps:**
+
+1. Save the following code as `load_test.js` in a local directory:
+
+    ```javascript
+    const axios = require('axios');
+
+    const TOTAL_REQUESTS = 10000;
+    const CONCURRENT_REQUESTS = 1000; // Adjust for different concurrency levels
+    const URL = 'https://wagmi10k-production.up.railway.app/wagmi'; // YOUR DEPLOYED RAILWAY URL
+
+    async function makeRequest() {
+        try {
+            const response = await axios.post(URL, { a: Math.floor(Math.random() * 50), b: Math.floor(Math.random() * 50) }); // Using random numbers for a+b <= 100
+            return response.data;
+        } catch (error) {
+            // console.error('Request failed:', error.message); // Uncomment for detailed errors
+            return null; // Treat failed requests as null results
+        }
+    }
+
+    async function runLoadTest() {
+        console.log(`Starting load test with ${TOTAL_REQUESTS} total requests...`);
+        const startTime = Date.now();
+
+        const batches = Math.ceil(TOTAL_REQUESTS / CONCURRENT_REQUESTS);
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < batches; i++) {
+            const batchSize = Math.min(CONCURRENT_REQUESTS, TOTAL_REQUESTS - i * CONCURRENT_REQUESTS);
+             if (batchSize <= 0) break; // Stop if no more requests
+
+            const batchPromises = Array(batchSize)
+                .fill()
+                .map(() => makeRequest());
+
+            const results = await Promise.all(batchPromises);
+
+            results.forEach(result => {
+                if (result && result.status === 'success') {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            });
+
+            console.log(`Batch ${i + 1}/${batches} completed. Success: ${successCount}, Failed: ${failCount}`);
+        }
+
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000;
+
+        console.log('\nLoad Test Results:');
+        console.log(`Total Duration: ${duration.toFixed(2)} seconds`);
+        console.log(`Successful Requests: ${successCount}`);
+        console.log(`Failed Requests: ${failCount}`);
+        console.log(`Requests per second: ${(TOTAL_REQUESTS / duration).toFixed(2)}`);
+    }
+
+    runLoadTest().catch(console.error);
+    ```
+
+2. Open your terminal or command prompt, navigate to the directory where you saved `load_test.js`, and run:
+
+    ```bash
+
+npm init -y
+npm install axios
+node load_test.js
+
+```
+
+The script will execute the load test and print the results to the console.
+
+## ⚙️ Local Development
+
+If you want to run the server locally:
+
+1.  **Install Rust:** Follow the instructions on [https://rustup.rs/](https://rustup.rs/).
+2.  **Run the server:**
+    ```bash
+cargo run --release
+```
+
+    The server will run on `http://localhost:8080`.
+
+## 📦 Deployment (Railway.app)
+
+This project includes a `Dockerfile` and `railway.toml` for easy deployment on [Railway.app](https://railway.app/). Connect your GitHub repository to Railway, and it will automatically build and deploy the application.
+
+---
+
+*This project is part of the WAGMI-9000 challenge.*
